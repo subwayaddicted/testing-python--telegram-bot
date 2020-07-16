@@ -1,6 +1,10 @@
+import json
+import logging
+import mysql.connector
+import os
+
 from telegram import Update
 from telegram.ext import Updater
-import logging, json, mysql.connector
 
 
 class Bot:
@@ -10,15 +14,22 @@ class Bot:
 
 		self.init_db(self.data)
 
-		self.updater = Updater(token=self.data["telegram"]["token"], use_context=True)
+		self.port = int(os.environ.get('PORT', 5000))
+		self.token = self.data["telegram"]["token"]
+
+		self.updater = Updater(token=self.token, use_context=True)
 		self.dispatcher = self.updater.dispatcher
 
-		logging.basicConfig(filename='all.log' ,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+		logging.basicConfig(filename='all.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 							level=logging.INFO)
 		self.logger = logging.getLogger(__name__)
 
 	def enable(self):
-		self.updater.start_polling()
+		self.updater.start_webhook(listen="0.0.0.0",
+								   port=int(self.port),
+								   url_path=self.token)
+		self.updater.bot.setWebhook('https://voice-saving-bot.herokuapp.com//' + self.token)
+
 		self.updater.idle()
 
 	def init_db(self, data: dict):
